@@ -546,12 +546,93 @@ export default function Home() {
     }
   };
 
-  // Handle starting a stage
+  // // Handle starting a stage
+  // const handleStartStage = async (stageNumber) => {
+  //   if (!selectedProject) return;
+
+  //   const stageName = `stage${stageNumber}`;
+
+  //   // Check if previous stages are completed
+  //   for (let i = 1; i < stageNumber; i++) {
+  //     const prevStageName = `stage${i}`;
+  //     if (stageStatus[prevStageName].status !== "completed") {
+  //       alert(
+  //         `You must complete Stage ${i} before starting Stage ${stageNumber}.`
+  //       );
+  //       return;
+  //     }
+  //   }
+
+  //   // Update status to processing
+  //   setStageStatus((prev) => ({
+  //     ...prev,
+  //     [stageName]: { status: "processing", progress: 0 },
+  //   }));
+
+  //   try {
+  //     // Send CSV file to the appropriate API endpoint
+  //     const formData = new FormData();
+  //     formData.append("projectId", selectedProject._id);
+  //     formData.append("stageName", stageName);
+  //     // If we have the CSV file stored in the project, we'd use that instead
+  //     if (csvFile) {
+  //       formData.append("csvFile", csvFile);
+  //     }
+
+  //     const response = await fetch(
+  //       `/api/projects/${selectedProject._id}/process-stage`,
+  //       {
+  //         method: "POST",
+  //         body: formData,
+  //       }
+  //     );
+
+  //     if (response.ok) {
+  //       // Simulate progress updates
+  //       const progressInterval = setInterval(() => {
+  //         setStageStatus((prev) => {
+  //           const currentProgress = prev[stageName].progress;
+  //           if (currentProgress >= 100) {
+  //             clearInterval(progressInterval);
+  //             return {
+  //               ...prev,
+  //               [stageName]: { status: "completed", progress: 100 },
+  //             };
+  //           }
+  //           return {
+  //             ...prev,
+  //             [stageName]: {
+  //               status: "processing",
+  //               progress: currentProgress + 10,
+  //             },
+  //           };
+  //         });
+  //       }, 500);
+
+  //       // In a real implementation, you might use server-sent events or websockets
+  //       // to get real-time progress updates from your backend
+  //     } else {
+  //       alert(`Failed to process Stage ${stageNumber}`);
+  //       setStageStatus((prev) => ({
+  //         ...prev,
+  //         [stageName]: { status: "not_started", progress: 0 },
+  //       }));
+  //     }
+  //   } catch (error) {
+  //     console.error(`Error processing Stage ${stageNumber}:`, error);
+  //     alert(`Error processing Stage ${stageNumber}`);
+  //     setStageStatus((prev) => ({
+  //       ...prev,
+  //       [stageName]: { status: "not_started", progress: 0 },
+  //     }));
+  //   }
+  // };
+
+  // In the Home component, update the handleStartStage function:
+
   const handleStartStage = async (stageNumber) => {
     if (!selectedProject) return;
-
     const stageName = `stage${stageNumber}`;
-
     // Check if previous stages are completed
     for (let i = 1; i < stageNumber; i++) {
       const prevStageName = `stage${i}`;
@@ -562,22 +643,18 @@ export default function Home() {
         return;
       }
     }
-
     // Update status to processing
     setStageStatus((prev) => ({
       ...prev,
       [stageName]: { status: "processing", progress: 0 },
     }));
-
     try {
-      // Send CSV file to the appropriate API endpoint
+      // Send project ID to the appropriate API endpoint
       const formData = new FormData();
       formData.append("projectId", selectedProject._id);
       formData.append("stageName", stageName);
-      // If we have the CSV file stored in the project, we'd use that instead
-      if (csvFile) {
-        formData.append("csvFile", csvFile);
-      }
+      // No need to append CSV file since we're storing it in MongoDB
+      // and can retrieve it from there
 
       const response = await fetch(
         `/api/projects/${selectedProject._id}/process-stage`,
@@ -586,7 +663,6 @@ export default function Home() {
           body: formData,
         }
       );
-
       if (response.ok) {
         // Simulate progress updates
         const progressInterval = setInterval(() => {
@@ -608,7 +684,6 @@ export default function Home() {
             };
           });
         }, 500);
-
         // In a real implementation, you might use server-sent events or websockets
         // to get real-time progress updates from your backend
       } else {
