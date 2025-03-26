@@ -1851,6 +1851,7 @@ export default function Home() {
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formUrl, setFormUrl] = useState("");
 
   // New project form state
   const [projectName, setProjectName] = useState("");
@@ -1901,7 +1902,40 @@ export default function Home() {
     fetchProjects();
   }, []);
 
-  // Create new project with file upload
+  // // Create new project with file upload
+  // const handleCreateProject = async () => {
+  //   if (!projectName.trim() || !csvFile) {
+  //     alert("Please provide a project name and CSV file");
+  //     return;
+  //   }
+
+  //   const formData = new FormData();
+  //   formData.append("userId", USER_ID);
+  //   formData.append("name", projectName);
+  //   formData.append("csvFile", csvFile);
+
+  //   try {
+  //     const response = await fetch("/api/projects", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
+
+  //     if (response.ok) {
+  //       // Refresh projects list
+  //       fetchProjects();
+  //       // Reset form and close modal
+  //       setProjectName("");
+  //       setCsvFile(null);
+  //       setIsModalOpen(false);
+  //     } else {
+  //       alert("Failed to create project");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error creating project:", error);
+  //     alert("Error creating project");
+  //   }
+  // };
+
   const handleCreateProject = async () => {
     if (!projectName.trim() || !csvFile) {
       alert("Please provide a project name and CSV file");
@@ -1911,6 +1945,7 @@ export default function Home() {
     const formData = new FormData();
     formData.append("userId", USER_ID);
     formData.append("name", projectName);
+    formData.append("formUrl", formUrl); // Add this line
     formData.append("csvFile", csvFile);
 
     try {
@@ -1920,18 +1955,14 @@ export default function Home() {
       });
 
       if (response.ok) {
-        // Refresh projects list
         fetchProjects();
-        // Reset form and close modal
         setProjectName("");
+        setFormUrl(""); // Reset form URL
         setCsvFile(null);
         setIsModalOpen(false);
-      } else {
-        alert("Failed to create project");
       }
     } catch (error) {
       console.error("Error creating project:", error);
-      alert("Error creating project");
     }
   };
 
@@ -2004,7 +2035,129 @@ export default function Home() {
     }));
   };
 
-  // Handle form submission for a specific stage
+  // // Handle form submission for a specific stage
+  // const handleSubmit = async (stageNumber) => {
+  //   if (!selectedProject) {
+  //     alert("No project selected");
+  //     return;
+  //   }
+
+  //   const stageName = `stage${stageNumber}`;
+  //   const formData = stageForms[stageName].reduce((acc, field) => {
+  //     if (field.parameter && field.value) {
+  //       acc[field.parameter] = field.value;
+  //     }
+  //     return acc;
+  //   }, {});
+
+  //   try {
+  //     const response = await fetch(
+  //       `/api/projects/${selectedProject._id}/stages`,
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify({
+  //           projectId: selectedProject._id,
+  //           projectName: selectedProject.name,
+  //           stageNumber,
+  //           parameters: formData,
+  //         }),
+  //       }
+  //     );
+
+  //     if (response.ok) {
+  //       console.log("Stage data saved successfully");
+  //       setIsFormSubmitted((prev) => ({
+  //         ...prev,
+  //         [stageName]: true,
+  //       }));
+  //       // Reset form fields for this stage
+  //       setStageForms((prev) => ({
+  //         ...prev,
+  //         [stageName]: [{ parameter: "", value: "" }],
+  //       }));
+  //     } else {
+  //       alert("Failed to save stage data");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error saving stage data:", error);
+  //     alert("Error saving stage data");
+  //   }
+  // };
+
+  // // Add this useEffect to load submission status on project selection
+  // useEffect(() => {
+  //   if (selectedProject) {
+  //     const loadSubmissionStatus = async () => {
+  //       try {
+  //         const response = await fetch(
+  //           `/api/projects/${selectedProject._id}/stages/status`
+  //         );
+  //         if (response.ok) {
+  //           const data = await response.json();
+  //           setIsFormSubmitted(data);
+  //         }
+  //       } catch (error) {
+  //         console.error("Error loading submission status:", error);
+  //       }
+  //     };
+  //     loadSubmissionStatus();
+  //   }
+  // }, [selectedProject]);
+
+  // // Modified handleSubmit to send all values
+  // const handleSubmit = async (stageNumber) => {
+  //   if (!selectedProject) {
+  //     alert("No project selected");
+  //     return;
+  //   }
+
+  //   const stageName = `stage${stageNumber}`;
+  //   const parameters = {};
+
+  //   // Group all values by parameter name
+  //   stageForms[stageName].forEach((field) => {
+  //     if (field.parameter && field.value) {
+  //       if (!parameters[field.parameter]) {
+  //         parameters[field.parameter] = [];
+  //       }
+  //       parameters[field.parameter].push(field.value);
+  //     }
+  //   });
+
+  //   try {
+  //     const response = await fetch(
+  //       `/api/projects/${selectedProject._id}/stages`,
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify({
+  //           projectId: selectedProject._id,
+  //           stageNumber,
+  //           parameters,
+  //         }),
+  //       }
+  //     );
+
+  //     if (response.ok) {
+  //       setIsFormSubmitted((prev) => ({
+  //         ...prev,
+  //         [stageName]: true,
+  //       }));
+  //       setStageForms((prev) => ({
+  //         ...prev,
+  //         [stageName]: [{ parameter: "", value: "" }],
+  //       }));
+  //     }
+  //   } catch (error) {
+  //     console.error("Error saving stage data:", error);
+  //   }
+  // };
+
   const handleSubmit = async (stageNumber) => {
     if (!selectedProject) {
       alert("No project selected");
@@ -2012,12 +2165,18 @@ export default function Home() {
     }
 
     const stageName = `stage${stageNumber}`;
-    const formData = stageForms[stageName].reduce((acc, field) => {
+    const parameters = {};
+
+    // Flatten the parameter values
+    stageForms[stageName].forEach((field) => {
       if (field.parameter && field.value) {
-        acc[field.parameter] = field.value;
+        if (!parameters[field.parameter]) {
+          parameters[field.parameter] = [];
+        }
+        // Directly push the value instead of creating nested arrays
+        parameters[field.parameter].push(field.value);
       }
-      return acc;
-    }, {});
+    });
 
     try {
       const response = await fetch(
@@ -2029,30 +2188,24 @@ export default function Home() {
           },
           body: JSON.stringify({
             projectId: selectedProject._id,
-            projectName: selectedProject.name,
             stageNumber,
-            parameters: formData,
+            parameters,
           }),
         }
       );
 
       if (response.ok) {
-        console.log("Stage data saved successfully");
         setIsFormSubmitted((prev) => ({
           ...prev,
           [stageName]: true,
         }));
-        // Reset form fields for this stage
         setStageForms((prev) => ({
           ...prev,
           [stageName]: [{ parameter: "", value: "" }],
         }));
-      } else {
-        alert("Failed to save stage data");
       }
     } catch (error) {
       console.error("Error saving stage data:", error);
-      alert("Error saving stage data");
     }
   };
 
@@ -2065,11 +2218,33 @@ export default function Home() {
     return stageStatus[prevStageName].status !== "completed";
   };
 
-  // Render content based on stage status
+  // Add this useEffect to load submission status when project is selected
+  useEffect(() => {
+    const checkStageSubmission = async () => {
+      if (selectedProject) {
+        try {
+          const response = await fetch(
+            `/api/projects/${selectedProject._id}/stages/status`
+          );
+          if (response.ok) {
+            const status = await response.json();
+            setIsFormSubmitted(status);
+          }
+        } catch (error) {
+          console.error("Error checking stage submission:", error);
+        }
+      }
+    };
+    checkStageSubmission();
+  }, [selectedProject]);
+
+  // Modify the renderStageContent function
   const renderStageContent = (stageNumber, title, description, tasks) => {
     const stageName = `stage${stageNumber}`;
     const status = stageStatus[stageName].status;
     const progress = stageStatus[stageName].progress;
+
+    const isSubmitted = isFormSubmitted[stageName];
 
     if (status === "processing") {
       return (
@@ -2109,11 +2284,10 @@ export default function Home() {
         </div>
       );
     } else {
-      // Not started
       return (
         <div>
           <p>{description}</p>
-          {stageNumber !== 4 && !isFormSubmitted[stageName] ? (
+          {stageNumber !== 4 && !isSubmitted ? (
             <div className="mt-4">
               <div className="space-y-4">
                 {stageForms[stageName].map((field, index) => (
@@ -2185,6 +2359,127 @@ export default function Home() {
       );
     }
   };
+
+  // // Render content based on stage status
+  // const renderStageContent = (stageNumber, title, description, tasks) => {
+  //   const stageName = `stage${stageNumber}`;
+  //   const status = stageStatus[stageName].status;
+  //   const progress = stageStatus[stageName].progress;
+
+  //   if (status === "processing") {
+  //     return (
+  //       <div className="flex flex-col items-center justify-center h-64">
+  //         <h3 className="text-xl font-semibold mb-4">
+  //           Processing Stage {stageNumber}
+  //         </h3>
+  //         <div className="w-full max-w-md h-4 bg-gray-200 rounded-full overflow-hidden">
+  //           <div
+  //             className="h-full bg-blue-600 transition-all duration-300 ease-in-out"
+  //             style={{ width: `${progress}%` }}
+  //           ></div>
+  //         </div>
+  //         <p className="mt-2 text-gray-600">{progress}% Complete</p>
+  //       </div>
+  //     );
+  //   } else if (status === "completed") {
+  //     return (
+  //       <div>
+  //         <p>{description}</p>
+  //         <div className="mt-4 space-y-4">
+  //           {tasks.map((task, idx) => (
+  //             <div
+  //               key={idx}
+  //               className="p-3 bg-green-50 rounded-md border border-green-200"
+  //             >
+  //               <h3 className="font-medium">{task.title}</h3>
+  //               <p className="text-gray-600 text-sm">{task.description}</p>
+  //               <div className="mt-2">
+  //                 <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+  //                   Completed
+  //                 </span>
+  //               </div>
+  //             </div>
+  //           ))}
+  //         </div>
+  //       </div>
+  //     );
+  //   } else {
+  //     // Not started
+  //     return (
+  //       <div>
+  //         <p>{description}</p>
+  //         {stageNumber !== 4 && !isFormSubmitted[stageName] ? (
+  //           <div className="mt-4">
+  //             <div className="space-y-4">
+  //               {stageForms[stageName].map((field, index) => (
+  //                 <div key={index} className="flex gap-4">
+  //                   <Input
+  //                     placeholder="Parameter"
+  //                     value={field.parameter}
+  //                     onChange={(e) =>
+  //                       handleInputChange(
+  //                         stageNumber,
+  //                         index,
+  //                         "parameter",
+  //                         e.target.value
+  //                       )
+  //                     }
+  //                   />
+  //                   <Input
+  //                     placeholder="Value"
+  //                     value={field.value}
+  //                     onChange={(e) =>
+  //                       handleInputChange(
+  //                         stageNumber,
+  //                         index,
+  //                         "value",
+  //                         e.target.value
+  //                       )
+  //                     }
+  //                   />
+  //                 </div>
+  //               ))}
+  //             </div>
+  //             <div className="flex gap-2 mt-4">
+  //               <Button
+  //                 onClick={() => handleAddFields(stageNumber)}
+  //                 variant="outline"
+  //                 className="w-10 h-10 p-0"
+  //               >
+  //                 <Plus className="h-4 w-4" />
+  //               </Button>
+  //               <Button onClick={() => handleSubmit(stageNumber)}>
+  //                 Submit
+  //               </Button>
+  //             </div>
+  //           </div>
+  //         ) : (
+  //           <div className="mt-4 space-y-4">
+  //             {tasks.map((task, idx) => (
+  //               <div
+  //                 key={idx}
+  //                 className="p-3 bg-gray-100 rounded-md border border-gray-200"
+  //               >
+  //                 <h3 className="font-medium">{task.title}</h3>
+  //                 <p className="text-gray-600 text-sm">{task.description}</p>
+  //               </div>
+  //             ))}
+  //             <div className="flex justify-center mt-8">
+  //               <Button
+  //                 onClick={() => handleStartStage(stageNumber)}
+  //                 disabled={isStageButtonDisabled(stageNumber)}
+  //                 className="flex items-center gap-2"
+  //               >
+  //                 <Play className="h-4 w-4" />
+  //                 Start Stage
+  //               </Button>
+  //             </div>
+  //           </div>
+  //         )}
+  //       </div>
+  //     );
+  //   }
+  // };
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -2419,7 +2714,7 @@ export default function Home() {
 
       {/* New Project Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        {/* <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Create New Project</DialogTitle>
           </DialogHeader>
@@ -2436,6 +2731,65 @@ export default function Home() {
             <div className="space-y-2">
               <Label htmlFor="csv-file">Upload CSV File</Label>
               <div className="border-2 border-dashed border-gray-300 rounded-md px-6 py-8">
+                <Input
+                  id="csv-file"
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setCsvFile(e.target.files[0])}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="csv-file"
+                  className="flex flex-col items-center cursor-pointer"
+                >
+                  <div className="text-sm text-gray-500 mb-2">
+                    {csvFile
+                      ? csvFile.name
+                      : "Click to upload or drag and drop"}
+                  </div>
+                  <Button type="button" variant="outline" size="sm">
+                    Select CSV File
+                  </Button>
+                </label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsModalOpen(false)} variant="outline">
+              Cancel
+            </Button>
+            <Button onClick={handleCreateProject}>Create Project</Button>
+          </DialogFooter>
+        </DialogContent> */}
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                placeholder="Enter project name"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="form-url">Form URL</Label>
+              <Input
+                id="form-url"
+                placeholder="Enter form URL (optional)"
+                value={formUrl}
+                onChange={(e) => setFormUrl(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="csv-file">Upload CSV File</Label>
+              <div
+                className="border-2 border-dashed border-gray-300 rounded-md px-6 py-8"
+                // onClick={(e) => e.stopPropagation()} // Add this to prevent triggering
+              >
                 <Input
                   id="csv-file"
                   type="file"
