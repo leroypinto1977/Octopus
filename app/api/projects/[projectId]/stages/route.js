@@ -70,7 +70,7 @@ const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/startup_singham";
 const DB_NAME = "startup_singham";
 const COLLECTION_NAME = "stages";
-
+1;
 async function connectToDatabase() {
   const client = await MongoClient.connect(MONGODB_URI);
   const db = client.db(DB_NAME);

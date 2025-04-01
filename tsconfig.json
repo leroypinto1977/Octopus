@@ -28,7 +28,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/page.jsx",
-    "middleware.ts"
+    "middleware.ts",
+    "app/api/projects/[projectId]/stats/route.js"
   ],
   "exclude": ["node_modules"]
 }
