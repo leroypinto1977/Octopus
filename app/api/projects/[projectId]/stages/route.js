@@ -1,128 +1,152 @@
+// import Project from "@/models/Project";
+// import connectDB from "@/lib/connectDB";
 // import { NextResponse } from "next/server";
-// import { MongoClient, ObjectId } from "mongodb";
 
-// const MONGODB_URI =
-//   process.env.MONGODB_URI || "mongodb://localhost:27017/startup_singham";
-// const DB_NAME = "startup_singham";
-// const COLLECTION_NAME = "stages";
-
-// async function connectToDatabase() {
-//   const client = await MongoClient.connect(MONGODB_URI);
-//   const db = client.db(DB_NAME);
-//   return { client, db };
-// }
-
-// export async function POST(request, { params }) {
-//   const { projectId } = params;
-
+// export async function POST(req, { params }) {
 //   try {
-//     const { client, db } = await connectToDatabase();
-//     const { stageNumber, parameters } = await request.json();
+//     await connectDB();
 
-//     // First check if stage already exists
-//     const existingStage = await db.collection(COLLECTION_NAME).findOne({
-//       projectId: new ObjectId(projectId),
-//       stageNumber,
-//     });
+//     // Get projectId from params
+//     const { projectId } = params;
 
-//     if (existingStage) {
-//       client.close();
+//     const { stageNumber, parameters } = await req.json();
+
+//     // Validate stage number
+//     if (![1, 2, 3, 4].includes(stageNumber)) {
 //       return NextResponse.json(
-//         { error: "Parameters for this stage already submitted" },
+//         { error: "Invalid stage number" },
 //         { status: 400 }
 //       );
 //     }
 
-//     // Prepare document with arrays for each parameter
-//     const stageDoc = {
-//       projectId: new ObjectId(projectId),
-//       stageNumber,
-//       parameters: {},
-//       createdAt: new Date(),
-//     };
+//     // Update the project
+//     const updatedProject = await Project.findOneAndUpdate(
+//       { projectId: projectId }, // Query by projectId
+//       {
+//         $set: {
+//           [`stages.stage${stageNumber}`]: {
+//             parameters,
+//             submittedAt: new Date(),
+//           },
+//         },
+//       },
+//       { new: true }
+//     );
 
-//     // Convert parameters to arrays
-//     for (const [param, value] of Object.entries(parameters)) {
-//       stageDoc.parameters[param] = [value];
+//     if (!updatedProject) {
+//       return NextResponse.json({ error: "Project not found" }, { status: 404 });
 //     }
 
-//     const result = await db.collection(COLLECTION_NAME).insertOne(stageDoc);
-
-//     client.close();
-
-//     return NextResponse.json({
-//       success: true,
-//       insertedId: result.insertedId,
-//     });
-//   } catch (error) {
-//     console.error("Database error:", error);
 //     return NextResponse.json(
-//       { error: "Failed to save stage data" },
+//       {
+//         message: "Stage data saved successfully",
+//         project: updatedProject,
+//       },
+//       { status: 200 }
+//     );
+//   } catch (error) {
+//     console.error("Error saving stage data:", error);
+//     return NextResponse.json(
+//       {
+//         error: "Failed to save stage data",
+//         details: error.message,
+//       },
 //       { status: 500 }
 //     );
 //   }
 // }
 
-import { NextResponse } from "next/server";
-import { MongoClient, ObjectId } from "mongodb";
+// export async function GET(req, { params }) {
+//   await connectDB();
+//   const { projectId } = params;
 
-const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/startup_singham";
-const DB_NAME = "startup_singham";
-const COLLECTION_NAME = "stages";
-1;
-async function connectToDatabase() {
-  const client = await MongoClient.connect(MONGODB_URI);
-  const db = client.db(DB_NAME);
-  return { client, db };
+//   try {
+//     const project = await Project.findOne({ projectId });
+//     if (!project) {
+//       return NextResponse.json({ error: "Project not found" }, { status: 404 });
+//     }
+
+//     // Check which stages have been submitted
+//     const status = {
+//       stage1: !!project.stages.stage1,
+//       stage2: !!project.stages.stage2,
+//       stage3: !!project.stages.stage3,
+//     };
+
+//     return NextResponse.json(status);
+//   } catch (error) {
+//     return NextResponse.json(
+//       { error: "Failed to check stage status" },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+import Project from "@/models/Project";
+import connectDB from "@/lib/connectDB";
+import { NextResponse } from "next/server";
+
+export async function POST(req, { params }) {
+  try {
+    await connectDB();
+
+    const { projectId } = params;
+    const { stageNumber, parameters } = await req.json();
+
+    const updatedProject = await Project.findOneAndUpdate(
+      { projectId },
+      {
+        $set: {
+          [`stages.stage${stageNumber}`]: {
+            parameters,
+            submittedAt: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedProject) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(
+      {
+        message: "Stage data saved successfully",
+        project: updatedProject,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error saving stage data:", error);
+    return NextResponse.json(
+      { error: "Failed to save stage data" },
+      { status: 500 }
+    );
+  }
 }
 
-export async function POST(request, { params }) {
+export async function GET(req, { params }) {
+  await connectDB();
   const { projectId } = params;
 
   try {
-    const { client, db } = await connectToDatabase();
-    const { stageNumber, parameters } = await request.json();
-
-    // Check if stage already exists
-    const existingStage = await db.collection(COLLECTION_NAME).findOne({
-      projectId: new ObjectId(projectId),
-      stageNumber,
-    });
-
-    if (existingStage) {
-      client.close();
-      return NextResponse.json(
-        { error: "Parameters for this stage already submitted" },
-        { status: 400 }
-      );
+    const project = await Project.findOne({ projectId });
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    // Create a new document with properly structured arrays
-    const stageDoc = {
-      projectId: new ObjectId(projectId),
-      stageNumber,
-      parameters: {},
-      createdAt: new Date(),
+    // Check which stages have been submitted
+    const status = {
+      stage1: !!project.stages.stage1,
+      stage2: !!project.stages.stage2,
+      stage3: !!project.stages.stage3,
     };
 
-    // Ensure parameters are stored as simple arrays
-    for (const [param, values] of Object.entries(parameters)) {
-      stageDoc.parameters[param] = Array.isArray(values) ? values : [values];
-    }
-
-    const result = await db.collection(COLLECTION_NAME).insertOne(stageDoc);
-
-    client.close();
-
-    return NextResponse.json({
-      success: true,
-      insertedId: result.insertedId,
-    });
+    return NextResponse.json(status);
   } catch (error) {
-    console.error("Database error:", error);
     return NextResponse.json(
-      { error: "Failed to save stage data" },
+      { error: "Failed to check stage status" },
       { status: 500 }
     );
   }

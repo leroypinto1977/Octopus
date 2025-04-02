@@ -29,7 +29,8 @@
     ".next/types/**/*.ts",
     "app/page.jsx",
     "middleware.ts",
-    "app/api/projects/[projectId]/stats/route.js"
+    "app/api/projects/[projectId]/stats/route.js",
+    "app/api/projects/[projectId]/stages/status/route.js"
   ],
   "exclude": ["node_modules"]
 }
