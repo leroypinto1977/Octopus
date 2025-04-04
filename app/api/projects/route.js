@@ -257,17 +257,113 @@ import Project from "@/models/Project";
 import connectDB from "@/lib/connectDB";
 import { NextResponse } from "next/server";
 
+// export async function GET(req) {
+//   await connectDB();
+//   const { searchParams } = new URL(req.url);
+//   const userId = searchParams.get("userId");
+
+//   try {
+//     const projects = await Project.find({ userId });
+//     return NextResponse.json(projects);
+//   } catch (error) {
+//     return NextResponse.json(
+//       { error: "Failed to fetch projects" },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+// Add this function to parse and process CSV data
+function processCSVData(csvString) {
+  const lines = csvString.split("\n");
+  const headers = lines[0].split(",").map((h) => h.trim());
+  const result = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+
+    const currentLine = lines[i].split(",");
+    const obj = {};
+
+    for (let j = 0; j < headers.length; j++) {
+      obj[headers[j]] = currentLine[j] ? currentLine[j].trim() : "";
+    }
+
+    result.push(obj);
+  }
+
+  // Process data for visualization
+  const cityDistribution = {};
+  const stageDistribution = {};
+  const sectorDistribution = {};
+
+  result.forEach((company) => {
+    // Count cities
+    const city = company.City;
+    cityDistribution[city] = (cityDistribution[city] || 0) + 1;
+
+    // Count stages
+    const stage = company["Current Stage of Startup"];
+    stageDistribution[stage] = (stageDistribution[stage] || 0) + 1;
+
+    // Count sectors
+    const sector = company.Sector;
+    sectorDistribution[sector] = (sectorDistribution[sector] || 0) + 1;
+  });
+
+  return {
+    cityDistribution,
+    stageDistribution,
+    sectorDistribution,
+    totalStartups: result.length,
+  };
+}
+
+// Update the GET endpoint
 export async function GET(req) {
   await connectDB();
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId");
+  const projectId = searchParams.get("projectId");
+  const analyticsData = searchParams.get("analyticsData");
 
   try {
-    const projects = await Project.find({ userId });
-    return NextResponse.json(projects);
+    if (projectId && analyticsData) {
+      const project = await Project.findOne({ projectId });
+
+      if (!project) {
+        return NextResponse.json(
+          { error: "Project not found" },
+          { status: 404 }
+        );
+      }
+
+      if (!project.csvFileData) {
+        return NextResponse.json(
+          { error: "No CSV data found for this project" },
+          { status: 404 }
+        );
+      }
+
+      const csvString = project.csvFileData.toString("utf-8");
+      const processedData = processCSVData(csvString);
+
+      return NextResponse.json({
+        success: true,
+        data: processedData,
+      });
+    } else if (userId) {
+      const projects = await Project.find({ userId });
+      return NextResponse.json(projects);
+    } else {
+      return NextResponse.json(
+        { error: "Missing parameters" },
+        { status: 400 }
+      );
+    }
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to fetch projects" },
+      { error: "Failed to fetch data", details: error.message },
       { status: 500 }
     );
   }

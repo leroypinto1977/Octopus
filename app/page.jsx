@@ -718,6 +718,9 @@ export default function Home() {
   const [projectName, setProjectName] = useState("");
   const [csvFile, setCsvFile] = useState(null);
 
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState(null);
+
   // Stage status tracking
   const [stageStatus, setStageStatus] = useState({
     stage1: { status: "not_started", progress: 0 },
@@ -739,6 +742,21 @@ export default function Home() {
     stage2: false,
     stage3: false,
   });
+
+  function getColorForStage(stage) {
+    const colors = {
+      Ideation: "#3b82f6",
+      "Pre-Revenue": "#10b981",
+      Prototype: "#f59e0b",
+      "Revenue & Growth": "#6366f1",
+      Expansion: "#8b5cf6",
+      "Mature Business": "#ec4899",
+      Validation: "#14b8a6",
+      "Early Growth": "#f97316",
+      Scaling: "#7c3aed",
+    };
+    return colors[stage] || "#6b7280";
+  }
 
   // Fetch projects from MongoDB
   const fetchProjects = async () => {
@@ -1017,7 +1035,31 @@ export default function Home() {
   //     }
   //   };
   //   checkStageSubmission();
+
   // }, [selectedProject]);
+
+  useEffect(() => {
+    if (selectedProject) {
+      fetchAnalyticsData(selectedProject.projectId);
+    }
+  }, [selectedProject]);
+
+  const fetchAnalyticsData = async (projectId) => {
+    setIsLoadingAnalytics(true);
+    try {
+      const response = await fetch(
+        `/api/projects?projectId=${projectId}&analyticsData=true`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setAnalyticsData(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching analytics data:", error);
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
+  };
 
   useEffect(() => {
     const checkStageSubmission = async () => {
@@ -1497,6 +1539,459 @@ export default function Home() {
                 <h2 className="text-2xl font-bold mb-6">
                   {selectedProject.name}
                 </h2>
+
+                {/* <div className="mb-6">
+                  <Card className="rounded-xl border-2 border-gray-300 p-4">
+                    <h3 className="text-lg font-semibold mb-4">
+                      Project Analytics
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+        
+                      <Card className="p-4">
+                        <h4 className="font-medium mb-2">
+                          Startup Locations in Tamil Nadu
+                        </h4>
+                        <div className="relative h-64 bg-gray-100 rounded-md flex items-center justify-center">
+ 
+                          <div className="relative w-full h-full">
+
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-3/4 h-3/4 bg-blue-50 rounded-lg border border-blue-200"></div>
+                            </div>
+
+    
+                            {selectedProject &&
+                              [
+                                {
+                                  city: "Chennai",
+                                  lat: 60,
+                                  lng: 60,
+                                  name: selectedProject.name,
+                                  sector: "Tech",
+                                },
+                                {
+                                  city: "Coimbatore",
+                                  lat: 40,
+                                  lng: 80,
+                                  name: "Other Startup",
+                                  sector: "Manufacturing",
+                                },
+                                {
+                                  city: "Madurai",
+                                  lat: 70,
+                                  lng: 40,
+                                  name: "Another Startup",
+                                  sector: "Agriculture",
+                                },
+                              ].map((location, index) => (
+                                <div
+                                  key={index}
+                                  className="absolute w-3 h-3 bg-red-500 rounded-full"
+                                  style={{
+                                    left: `${location.lat}%`,
+                                    top: `${location.lng}%`,
+                                  }}
+                                  title={`${location.name} (${location.sector}) - ${location.city}`}
+                                ></div>
+                              ))}
+                          </div>
+                          <div className="absolute bottom-2 left-2 text-xs text-gray-500">
+                            {selectedProject
+                              ? `${selectedProject.name} locations`
+                              : "Startup locations"}
+                          </div>
+                        </div>
+                      </Card>
+
+      
+                      <Card className="p-4">
+                        <h4 className="font-medium mb-2">
+                          Startup Stage Distribution
+                        </h4>
+                        <div className="relative h-64 flex items-center justify-center">
+                
+                          <div className="relative w-40 h-40">
+                            <svg
+                              viewBox="0 0 100 100"
+                              className="w-full h-full"
+                            >
+                
+                              <circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                fill="none"
+                                stroke="#e5e7eb"
+                                strokeWidth="10"
+                              />
+
+                              {selectedProject &&
+                                [
+                                  {
+                                    stage: "Ideation",
+                                    percentage: 20,
+                                    color: "#3b82f6",
+                                  },
+                                  {
+                                    stage: "Validation",
+                                    percentage: 35,
+                                    color: "#10b981",
+                                  },
+                                  {
+                                    stage: "Early Growth",
+                                    percentage: 25,
+                                    color: "#f59e0b",
+                                  },
+                                  {
+                                    stage: "Scaling",
+                                    percentage: 20,
+                                    color: "#6366f1",
+                                  },
+                                ].map((segment, index, array) => {
+                                  const startAngle =
+                                    array
+                                      .slice(0, index)
+                                      .reduce(
+                                        (acc, curr) => acc + curr.percentage,
+                                        0
+                                      ) * 3.6;
+                                  const endAngle =
+                                    startAngle + segment.percentage * 3.6;
+
+                                  return (
+                                    <circle
+                                      key={index}
+                                      cx="50"
+                                      cy="50"
+                                      r="45"
+                                      fill="none"
+                                      stroke={segment.color}
+                                      strokeWidth="10"
+                                      strokeDasharray={`${segment.percentage} ${
+                                        100 - segment.percentage
+                                      }`}
+                                      strokeDashoffset={25 - startAngle / 3.6}
+                                      transform="rotate(-90 50 50)"
+                                    />
+                                  );
+                                })}
+                            </svg>
+
+            
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="text-center">
+                                <div className="text-xl font-semibold">
+                                  {selectedProject ? "4" : "0"} Stages
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Completed
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                            <div className="space-y-2">
+                              {[
+                                { stage: "Ideation", color: "#3b82f6" },
+                                { stage: "Validation", color: "#10b981" },
+                                { stage: "Early Growth", color: "#f59e0b" },
+                                { stage: "Scaling", color: "#6366f1" },
+                              ].map((item, index) => (
+                                <div key={index} className="flex items-center">
+                                  <div
+                                    className="w-3 h-3 rounded-full mr-2"
+                                    style={{ backgroundColor: item.color }}
+                                  ></div>
+                                  <span className="text-xs">{item.stage}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  </Card>
+                </div> */}
+
+                <div className="mb-6">
+                  <Card className="rounded-xl border-2 border-gray-300 p-4">
+                    <h3 className="text-lg font-semibold mb-4">
+                      Project Analytics
+                    </h3>
+                    {isLoadingAnalytics ? (
+                      <div className="h-64 flex items-center justify-center">
+                        <div className="text-gray-500">Loading data...</div>
+                      </div>
+                    ) : analyticsData ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Map Visualization */}
+                        <Card className="p-4">
+                          <h4 className="font-medium mb-2">
+                            Startup Locations in Tamil Nadu
+                          </h4>
+                          <div className="relative h-64 bg-gray-100 rounded-md flex items-center justify-center">
+                            <div className="relative w-full h-full">
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-3/4 h-3/4 bg-blue-50 rounded-lg border border-blue-200"></div>
+                              </div>
+
+                              {Object.entries(
+                                analyticsData.cityDistribution
+                              ).map(([city, count], index) => {
+                                const cityCoordinates = {
+                                  Chennai: { lat: 70, lng: 30 },
+                                  Coimbatore: { lat: 40, lng: 70 },
+                                  Madurai: { lat: 60, lng: 50 },
+                                  // Add more cities as needed
+                                };
+
+                                const coords = cityCoordinates[city] || {
+                                  lat: 50,
+                                  lng: 50,
+                                };
+                                const size = Math.min(
+                                  8,
+                                  Math.max(3, count / 2)
+                                );
+
+                                return (
+                                  <div
+                                    key={index}
+                                    className="absolute bg-red-500 rounded-full"
+                                    style={{
+                                      left: `${coords.lat}%`,
+                                      top: `${coords.lng}%`,
+                                      width: `${size}px`,
+                                      height: `${size}px`,
+                                    }}
+                                    title={`${city} (${count} startups)`}
+                                  ></div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </Card>
+
+                        {/* const cityCoordinates = {
+                                  Chennai: { lat: 70, lng: 30 },
+                                  Coimbatore: { lat: 40, lng: 70 },
+                                  Madurai: { lat: 60, lng: 50 },
+                                  // Add more cities as needed
+                                }; */}
+
+                        {/* Ring Chart */}
+                        {/* <Card className="p-4">
+                          <h4 className="font-medium mb-2">
+                            Startup Stage Distribution
+                          </h4>
+                          <div className="relative h-64 flex items-center justify-center">
+                            <div className="relative w-40 h-40">
+                              <svg
+                                viewBox="0 0 100 100"
+                                className="w-full h-full"
+                              >
+                                <circle
+                                  cx="50"
+                                  cy="50"
+                                  r="45"
+                                  fill="none"
+                                  stroke="#e5e7eb"
+                                  strokeWidth="10"
+                                />
+
+                                {Object.entries(
+                                  analyticsData.stageDistribution
+                                ).map(([stage, count], index, array) => {
+                                  const percentage =
+                                    (count / analyticsData.totalStartups) * 100;
+                                  const startAngle =
+                                    array
+                                      .slice(0, index)
+                                      .reduce(
+                                        (acc, [_, currCount]) =>
+                                          acc +
+                                          (currCount /
+                                            analyticsData.totalStartups) *
+                                            100,
+                                        0
+                                      ) * 3.6;
+
+                                  return (
+                                    <circle
+                                      key={index}
+                                      cx="50"
+                                      cy="50"
+                                      r="45"
+                                      fill="none"
+                                      stroke={getColorForStage(stage)}
+                                      strokeWidth="10"
+                                      strokeDasharray={`${percentage} ${
+                                        100 - percentage
+                                      }`}
+                                      strokeDashoffset={25 - startAngle / 3.6}
+                                      transform="rotate(-90 50 50)"
+                                    />
+                                  );
+                                })}
+                              </svg>
+
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="text-center">
+                                  <div className="text-xl font-semibold">
+                                    {analyticsData.totalStartups}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    Startups
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                              <div className="space-y-2">
+                                {Object.entries(
+                                  analyticsData.stageDistribution
+                                ).map(([stage, count], index) => {
+                                  const percentage = Math.round(
+                                    (count / analyticsData.totalStartups) * 100
+                                  );
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="flex items-center"
+                                    >
+                                      <div
+                                        className="w-3 h-3 rounded-full mr-2"
+                                        style={{
+                                          backgroundColor:
+                                            getColorForStage(stage),
+                                        }}
+                                      ></div>
+                                      <span className="text-xs">
+                                        {stage} ({percentage}%)
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </Card> */}
+
+                        {/* Ring Chart */}
+                        <Card className="p-4">
+                          <h4 className="font-medium mb-2">
+                            Startup Stage Distribution
+                          </h4>
+                          <div className="relative h-64">
+                            {/* Center the chart both horizontally and vertically */}
+                            <div className="absolute top-1/2 left-1/4 transform -translate-x-1/2 -translate-y-1/2">
+                              <div className="relative w-40 h-40">
+                                <svg
+                                  viewBox="0 0 100 100"
+                                  className="w-full h-full"
+                                >
+                                  <circle
+                                    cx="50"
+                                    cy="50"
+                                    r="45"
+                                    fill="none"
+                                    stroke="#e5e7eb"
+                                    strokeWidth="10"
+                                  />
+
+                                  {Object.entries(
+                                    analyticsData?.stageDistribution || {}
+                                  ).map(([stage, count], index, array) => {
+                                    const percentage =
+                                      (count / analyticsData.totalStartups) *
+                                      100;
+                                    const startAngle =
+                                      array
+                                        .slice(0, index)
+                                        .reduce(
+                                          (acc, [_, currCount]) =>
+                                            acc +
+                                            (currCount /
+                                              analyticsData.totalStartups) *
+                                              100,
+                                          0
+                                        ) * 3.6;
+
+                                    return (
+                                      <circle
+                                        key={index}
+                                        cx="50"
+                                        cy="50"
+                                        r="45"
+                                        fill="none"
+                                        stroke={getColorForStage(stage)}
+                                        strokeWidth="10"
+                                        strokeDasharray={`${percentage} ${
+                                          100 - percentage
+                                        }`}
+                                        strokeDashoffset={25 - startAngle / 3.6}
+                                        transform="rotate(-90 50 50)"
+                                      />
+                                    );
+                                  })}
+                                </svg>
+
+                                {/* Center text - perfectly centered */}
+                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                                  <div className="text-xl font-semibold">
+                                    {analyticsData?.totalStartups || 0}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    Startups
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Legend - positioned to the right of the centered chart */}
+                            <div className="absolute left-1/3 ml-24 top-1/2 transform -translate-y-1/2">
+                              <div className="space-y-2">
+                                {Object.entries(
+                                  analyticsData?.stageDistribution || {}
+                                ).map(([stage, count], index) => {
+                                  const percentage = Math.round(
+                                    (count /
+                                      (analyticsData?.totalStartups || 1)) *
+                                      100
+                                  );
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="flex items-center"
+                                    >
+                                      <div
+                                        className="w-3 h-3 rounded-full mr-2"
+                                        style={{
+                                          backgroundColor:
+                                            getColorForStage(stage),
+                                        }}
+                                      ></div>
+                                      <span className="text-xs">
+                                        {stage} ({percentage}%)
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      </div>
+                    ) : (
+                      <div className="h-64 flex items-center justify-center">
+                        <div className="text-gray-500">
+                          No analytics data available
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                </div>
                 {/* Project Stage Tabs */}
                 <Tabs defaultValue="stage1" className="flex-1 flex flex-col">
                   <TabsList className="grid w-full grid-cols-4 mb-6">
