@@ -257,23 +257,6 @@ import Project from "@/models/Project";
 import connectDB from "@/lib/connectDB";
 import { NextResponse } from "next/server";
 
-// export async function GET(req) {
-//   await connectDB();
-//   const { searchParams } = new URL(req.url);
-//   const userId = searchParams.get("userId");
-
-//   try {
-//     const projects = await Project.find({ userId });
-//     return NextResponse.json(projects);
-//   } catch (error) {
-//     return NextResponse.json(
-//       { error: "Failed to fetch projects" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// Add this function to parse and process CSV data
 function processCSVData(csvString) {
   const lines = csvString.split("\n");
   const headers = lines[0].split(",").map((h) => h.trim());

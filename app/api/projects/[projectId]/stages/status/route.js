@@ -138,32 +138,61 @@
 // }
 
 import Project from "@/models/Project";
+import Stage from "@/models/Stage";
 import connectDB from "@/lib/connectDB";
 import { NextResponse } from "next/server";
 
+// export async function GET(req, { params }) {
+//   try {
+//     await connectDB();
+
+//     const { projectId } = params;
+
+//     const project = await Project.findOne({ projectId });
+
+//     if (!project) {
+//       return NextResponse.json({ error: "Project not found" }, { status: 404 });
+//     }
+
+//     // Return the stages status
+//     const status = {
+//       stage1: !!project.stages?.stage1,
+//       stage2: !!project.stages?.stage2,
+//       stage3: !!project.stages?.stage3,
+//       stage4: !!project.stages?.stage4,
+//     };
+
+//     return NextResponse.json(status);
+//   } catch (error) {
+//     console.error("Error checking stage status:", error);
+//     return NextResponse.json(
+//       { error: "Failed to check stage status" },
+//       { status: 500 }
+//     );
+//   }
+// }
+
 export async function GET(req, { params }) {
+  const { projectId } = params;
+
+  await connectDB();
+
   try {
-    await connectDB();
-
-    const { projectId } = params;
-
-    const project = await Project.findOne({ projectId });
-
-    if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    }
-
-    // Return the stages status
+    const stages = await Stage.find({ projectId });
     const status = {
-      stage1: !!project.stages?.stage1,
-      stage2: !!project.stages?.stage2,
-      stage3: !!project.stages?.stage3,
-      stage4: !!project.stages?.stage4,
+      stage1: false,
+      stage2: false,
+      stage3: false,
+      stage4: false,
     };
+
+    stages.forEach((stage) => {
+      status[`stage${stage.stageNumber}`] =
+        Object.keys(stage.parameters).length > 0;
+    });
 
     return NextResponse.json(status);
   } catch (error) {
-    console.error("Error checking stage status:", error);
     return NextResponse.json(
       { error: "Failed to check stage status" },
       { status: 500 }

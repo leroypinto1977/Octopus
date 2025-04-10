@@ -1,119 +1,96 @@
-// import Project from "@/models/Project";
+// import Stage from "@/models/Stage";
 // import connectDB from "@/lib/connectDB";
 // import { NextResponse } from "next/server";
 
 // export async function POST(req, { params }) {
 //   try {
 //     await connectDB();
-
-//     // Get projectId from params
 //     const { projectId } = params;
-
 //     const { stageNumber, parameters } = await req.json();
 
-//     // Validate stage number
-//     if (![1, 2, 3, 4].includes(stageNumber)) {
-//       return NextResponse.json(
-//         { error: "Invalid stage number" },
-//         { status: 400 }
-//       );
-//     }
+//     // Convert parameters to Map format
+//     const parametersMap = {};
+//     Object.entries(parameters).forEach(([key, values]) => {
+//       parametersMap[key] = Array.isArray(values) ? values : [values];
+//     });
 
-//     // Update the project
-//     const updatedProject = await Project.findOneAndUpdate(
-//       { projectId: projectId }, // Query by projectId
+//     // Update or create the stage document
+//     const updatedStage = await Stage.findOneAndUpdate(
+//       { projectId, stageNumber },
 //       {
-//         $set: {
-//           [`stages.stage${stageNumber}`]: {
-//             parameters,
-//             submittedAt: new Date(),
-//           },
-//         },
+//         $setOnInsert: { projectId, stageNumber },
+//         $push: Object.entries(parametersMap).reduce((acc, [key, values]) => {
+//           values.forEach((value) => {
+//             acc[`parameters.${key}`] = value;
+//           });
+//           return acc;
+//         }, {}),
 //       },
-//       { new: true }
+//       { upsert: true, new: true }
 //     );
-
-//     if (!updatedProject) {
-//       return NextResponse.json({ error: "Project not found" }, { status: 404 });
-//     }
 
 //     return NextResponse.json(
 //       {
 //         message: "Stage data saved successfully",
-//         project: updatedProject,
+//         stage: updatedStage,
 //       },
 //       { status: 200 }
 //     );
 //   } catch (error) {
 //     console.error("Error saving stage data:", error);
 //     return NextResponse.json(
-//       {
-//         error: "Failed to save stage data",
-//         details: error.message,
-//       },
+//       { error: "Failed to save stage data" },
 //       { status: 500 }
 //     );
 //   }
 // }
 
-// export async function GET(req, { params }) {
-//   await connectDB();
-//   const { projectId } = params;
-
-//   try {
-//     const project = await Project.findOne({ projectId });
-//     if (!project) {
-//       return NextResponse.json({ error: "Project not found" }, { status: 404 });
-//     }
-
-//     // Check which stages have been submitted
-//     const status = {
-//       stage1: !!project.stages.stage1,
-//       stage2: !!project.stages.stage2,
-//       stage3: !!project.stages.stage3,
-//     };
-
-//     return NextResponse.json(status);
-//   } catch (error) {
-//     return NextResponse.json(
-//       { error: "Failed to check stage status" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-import Project from "@/models/Project";
+import Stage from "@/models/Stage";
 import connectDB from "@/lib/connectDB";
 import { NextResponse } from "next/server";
 
 export async function POST(req, { params }) {
+  // Destructure params FIRST before any async operations
+  const { projectId } = params;
+
   try {
     await connectDB();
-
-    const { projectId } = params;
     const { stageNumber, parameters } = await req.json();
 
-    const updatedProject = await Project.findOneAndUpdate(
-      { projectId },
-      {
-        $set: {
-          [`stages.stage${stageNumber}`]: {
-            parameters,
-            submittedAt: new Date(),
-          },
-        },
-      },
-      { new: true }
-    );
+    // Convert parameters to proper array format
+    const updateObject = {};
+    Object.entries(parameters).forEach(([key, values]) => {
+      updateObject[key] = Array.isArray(values) ? values : [values];
+    });
 
-    if (!updatedProject) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    }
+    // Build MongoDB update operation
+    const updateOperation = {
+      $setOnInsert: { projectId, stageNumber },
+      $push: {},
+    };
+
+    // Add $push operations for each parameter
+    Object.entries(updateObject).forEach(([key, values]) => {
+      updateOperation.$push[`parameters.${key}`] = {
+        $each: values,
+      };
+    });
+
+    // Update or create the stage document
+    const updatedStage = await Stage.findOneAndUpdate(
+      { projectId, stageNumber },
+      updateOperation,
+      {
+        upsert: true,
+        new: true,
+        // Remove arrayFilters since we're not using them
+      }
+    );
 
     return NextResponse.json(
       {
         message: "Stage data saved successfully",
-        project: updatedProject,
+        stage: updatedStage,
       },
       { status: 200 }
     );
@@ -126,22 +103,25 @@ export async function POST(req, { params }) {
   }
 }
 
+// app/api/projects/[projectId]/stages/route.js
 export async function GET(req, { params }) {
   await connectDB();
   const { projectId } = params;
 
   try {
-    const project = await Project.findOne({ projectId });
-    if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    }
-
-    // Check which stages have been submitted
+    const stages = await Stage.find({ projectId });
     const status = {
-      stage1: !!project.stages.stage1,
-      stage2: !!project.stages.stage2,
-      stage3: !!project.stages.stage3,
+      stage1: false,
+      stage2: false,
+      stage3: false,
+      stage4: false,
     };
+
+    stages.forEach((stage) => {
+      // Correct parameter existence check
+      status[`stage${stage.stageNumber}`] =
+        Object.keys(stage.parameters).length > 0;
+    });
 
     return NextResponse.json(status);
   } catch (error) {

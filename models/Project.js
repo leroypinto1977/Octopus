@@ -75,10 +75,6 @@ const projectSchema = new mongoose.Schema(
     formUrl: String,
     csvFileName: String,
     csvFileData: Buffer,
-    stages: {
-      type: Object,
-      default: {},
-    },
     createdAt: {
       type: Date,
       default: Date.now,
