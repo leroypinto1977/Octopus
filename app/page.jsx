@@ -202,7 +202,7 @@ export default function Home() {
 
       // Call n8n endpoint
       const response = await fetch(
-        `https://leroyaxtr.app.n8n.cloud/webhook-test/db4cff1b-2e0d-49cb-a28c-c176ff48abc3`,
+        `https://leroyaxtr.app.n8n.cloud/webhook/db4cff1b-2e0d-49cb-a28c-c176ff48abc3`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -266,59 +266,113 @@ export default function Home() {
     }
   };
 
+  // const handleDownloadReport = async (stageNumber) => {
+  //   if (!selectedProject) {
+  //     alert("No project selected");
+  //     return;
+  //   }
+
+  //   try {
+  //     // First make the POST request to the n8n webhook
+  //     const response = await fetch(
+  //       "https://leroyaxtr.app.n8n.cloud/webhook/0c7ef2fc-bd27-4499-9227-484c768fa7a6",
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify({
+  //           projectId: selectedProject.projectId,
+  //           stageNumber: stageNumber,
+  //         }),
+  //       }
+  //     );
+
+  //     if (!response.ok) {
+  //       throw new Error("Failed to trigger report generation");
+  //     }
+
+  //     // Then proceed with downloading the report
+  //     const downloadResponse = await fetch(
+  //       `/api/projects/${selectedProject.projectId}/report/${stageNumber}`
+  //     );
+
+  //     if (downloadResponse.ok) {
+  //       const blob = await downloadResponse.blob();
+  //       const url = window.URL.createObjectURL(blob);
+  //       const a = document.createElement("a");
+  //       a.href = url;
+  //       a.download = `stage-${stageNumber}-report.pdf`;
+  //       document.body.appendChild(a);
+  //       a.click();
+  //       window.URL.revokeObjectURL(url);
+  //       a.remove();
+  //     }
+  //   } catch (error) {
+  //     console.error("Error downloading report:", error);
+  //     alert("Error generating or downloading report");
+  //   }
+  // };
+
   const handleDownloadReport = async (stageNumber) => {
+    if (!selectedProject) {
+      alert("No project selected");
+      return;
+    }
+
     try {
+      // Make the POST request to the n8n webhook and handle the blob response
       const response = await fetch(
-        `/api/projects/${selectedProject.projectId}/report/${stageNumber}`
+        "https://leroyaxtr.app.n8n.cloud/webhook/0c7ef2fc-bd27-4499-9227-484c768fa7a6",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/octet-stream",
+          },
+          body: JSON.stringify({
+            projectId: selectedProject.projectId,
+            // projectId: "PRJ_1744771826173_6135",
+            stageNumber: stageNumber,
+          }),
+        }
       );
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `stage-${stageNumber}-report.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        a.remove();
+
+      if (!response.ok) {
+        throw new Error("Failed to generate and download report");
       }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Extract filename from Content-Disposition header
+      const contentDisposition = response.headers.get("content-disposition");
+      let filename = `stage-${stageNumber}-report.csv`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]=((['"]).?\2|[^;\n]*)/
+        );
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, "");
+        }
+      }
+
+      // Create download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      a.remove();
     } catch (error) {
       console.error("Error downloading report:", error);
+      alert("Error generating or downloading report");
     }
   };
-
-  // useEffect(() => {
-  //   const fetchStagesData = async () => {
-  //     if (selectedProject) {
-  //       try {
-  //         const response = await fetch(
-  //           `/api/projects/${selectedProject.projectId}/stages/data`
-  //         );
-  //         if (response.ok) {
-  //           const data = await response.json();
-  //           const stages = data.reduce((acc, stage) => {
-  //             acc[`stage${stage.stageNumber}`] = stage;
-  //             return acc;
-  //           }, {});
-  //           setStagesData(stages);
-
-  //           // Initialize stageStatus from database
-  //           const initialStatus = {};
-  //           data.forEach((stage) => {
-  //             initialStatus[`stage${stage.stageNumber}`] = {
-  //               status: stage.status,
-  //               progress: stage.progress,
-  //             };
-  //           });
-  //           setStageStatus(initialStatus);
-  //         }
-  //       } catch (error) {
-  //         console.error("Error fetching stages data:", error);
-  //       }
-  //     }
-  //   };
-  //   fetchStagesData();
-  // }, [selectedProject]);
 
   useEffect(() => {
     const fetchStagesData = async () => {
@@ -725,9 +779,9 @@ export default function Home() {
               <Button
                 onClick={() => handleDownloadReport(stageNumber)}
                 variant="success"
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 text-white"
               >
-                <Download className="mr-2 h-4 w-4" />
+                <Download className="mr-2 h-4 w-4 text-white" />
                 Download Report
               </Button>
             </div>
@@ -766,7 +820,7 @@ export default function Home() {
                           tickLine={false}
                           axisLine={false}
                           tickMargin={10}
-                          tickFormatter={(value) => value.slice(0, 8)}
+                          tickFormatter={(value) => value.slice(0, 6)}
                         />
                         <ChartTooltip
                           cursor={false}
