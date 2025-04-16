@@ -17,6 +17,15 @@ const stageSchema = new mongoose.Schema(
       of: [String],
       default: {},
     },
+    status: {
+      type: String,
+      enum: ["not_started", "processing", "completed"],
+      default: "not_started",
+    },
+    progress: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
