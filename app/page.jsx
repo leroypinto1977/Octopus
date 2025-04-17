@@ -1,6 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -32,9 +38,7 @@ import {
   MoreHorizontal,
   Download, // Add this import
 } from "lucide-react";
-import { CardDescription, CardFooter } from "@/components/ui/card";
 import {
-  ChartConfig,
   ChartContainer,
   ChartStyle,
   ChartTooltip,
@@ -68,6 +72,9 @@ export default function Home() {
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
 
+  const [stageReportData, setStageReportData] = useState({});
+  const [fetchedStages, setFetchedStages] = useState({});
+
   // Stage status tracking
   const [stageStatus, setStageStatus] = useState({
     stage1: { status: "not_started", progress: 0 },
@@ -90,91 +97,41 @@ export default function Home() {
     stage3: false,
   });
 
-  const chartConfig = {
-    // ... other config
-    corporation: {
-      label: "Corporation",
-      color: "hsl(var(--chart-1))",
-    },
-    llc: {
-      label: "LLC",
-      color: "hsl(var(--chart-2))",
-    },
-    partnership: {
-      label: "Partnership",
-      color: "hsl(var(--chart-3))",
-    },
-    sole_proprietorship: {
-      label: "Sole Proprietorship",
-      color: "hsl(var(--chart-4))",
-    },
-    // Add other entity types as needed
+  useEffect(() => {
+    if (selectedProject) {
+      // Check all stages and fetch data for completed ones
+      [1, 2, 3, 4].forEach((stageNumber) => {
+        const stageName = `stage${stageNumber}`;
+        if (
+          stageStatus[stageName]?.status === "completed" &&
+          !fetchedStages[stageNumber]
+        ) {
+          fetchStageReportData(selectedProject.projectId, stageNumber);
+          setFetchedStages((prev) => ({
+            ...prev,
+            [stageNumber]: true,
+          }));
+        }
+      });
+    }
+  }, [selectedProject, stageStatus, fetchedStages]);
+
+  const fetchStageReportData = async (projectId, stageNumber) => {
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/stages/${stageNumber}/report-data`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setStageReportData((prev) => ({
+          ...prev,
+          [stageNumber]: data,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching stage report data:", error);
+    }
   };
-
-  // const handleStartStage = async (stageNumber) => {
-  //   if (!selectedProject) {
-  //     alert("No project selected");
-  //     return;
-  //   }
-
-  //   // Update UI to processing state
-  //   setStageStatus((prev) => ({
-  //     ...prev,
-  //     [`stage${stageNumber}`]: { status: "processing", progress: 0 },
-  //   }));
-
-  //   try {
-  //     // Call n8n API endpoint
-  //     const response = await fetch(
-  //       `https://leroyaxtr.app.n8n.cloud/webhook-test/db4cff1b-2e0d-49cb-a28c-c176ff48abc3`,
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({
-  //           projectId: selectedProject.projectId,
-  //           stageNumber: stageNumber,
-  //         }),
-  //       }
-  //     );
-
-  //     if (!response.ok) throw new Error("Failed to start stage");
-
-  //     // Simulate progress updates (replace with real polling in actual implementation)
-  //     const interval = setInterval(async () => {
-  //       setStageStatus((prev) => {
-  //         const newProgress = Math.min(
-  //           prev[`stage${stageNumber}`].progress + 20,
-  //           100
-  //         );
-
-  //         if (newProgress === 100) {
-  //           clearInterval(interval);
-  //           // Mark stage as completed
-  //           return {
-  //             ...prev,
-  //             [`stage${stageNumber}`]: { status: "completed", progress: 100 },
-  //           };
-  //         }
-
-  //         return {
-  //           ...prev,
-  //           [`stage${stageNumber}`]: {
-  //             status: "processing",
-  //             progress: newProgress,
-  //           },
-  //         };
-  //       });
-  //     }, 1000);
-  //   } catch (error) {
-  //     console.error("Error starting stage:", error);
-  //     setStageStatus((prev) => ({
-  //       ...prev,
-  //       [`stage${stageNumber}`]: { status: "not_started", progress: 0 },
-  //     }));
-  //   }
-  // };
 
   const handleStartStage = async (stageNumber) => {
     if (!selectedProject) {
@@ -266,54 +223,6 @@ export default function Home() {
     }
   };
 
-  // const handleDownloadReport = async (stageNumber) => {
-  //   if (!selectedProject) {
-  //     alert("No project selected");
-  //     return;
-  //   }
-
-  //   try {
-  //     // First make the POST request to the n8n webhook
-  //     const response = await fetch(
-  //       "https://leroyaxtr.app.n8n.cloud/webhook/0c7ef2fc-bd27-4499-9227-484c768fa7a6",
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify({
-  //           projectId: selectedProject.projectId,
-  //           stageNumber: stageNumber,
-  //         }),
-  //       }
-  //     );
-
-  //     if (!response.ok) {
-  //       throw new Error("Failed to trigger report generation");
-  //     }
-
-  //     // Then proceed with downloading the report
-  //     const downloadResponse = await fetch(
-  //       `/api/projects/${selectedProject.projectId}/report/${stageNumber}`
-  //     );
-
-  //     if (downloadResponse.ok) {
-  //       const blob = await downloadResponse.blob();
-  //       const url = window.URL.createObjectURL(blob);
-  //       const a = document.createElement("a");
-  //       a.href = url;
-  //       a.download = `stage-${stageNumber}-report.pdf`;
-  //       document.body.appendChild(a);
-  //       a.click();
-  //       window.URL.revokeObjectURL(url);
-  //       a.remove();
-  //     }
-  //   } catch (error) {
-  //     console.error("Error downloading report:", error);
-  //     alert("Error generating or downloading report");
-  //   }
-  // };
-
   const handleDownloadReport = async (stageNumber) => {
     if (!selectedProject) {
       alert("No project selected");
@@ -347,7 +256,7 @@ export default function Home() {
 
       // Extract filename from Content-Disposition header
       const contentDisposition = response.headers.get("content-disposition");
-      let filename = `stage-${stageNumber}-report.csv`;
+      let filename = `${selectedProject.projectId}-stage-${stageNumber}-report.csv`;
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(
           /filename[^;=\n]=((['"]).?\2|[^;\n]*)/
@@ -416,21 +325,6 @@ export default function Home() {
     fetchStagesData();
   }, [selectedProject]);
 
-  function getColorForStage(stage) {
-    const colors = {
-      Ideation: "#3b82f6",
-      "Pre-Revenue": "#10b981",
-      Prototype: "#f59e0b",
-      "Revenue & Growth": "#6366f1",
-      Expansion: "#8b5cf6",
-      "Mature Business": "#ec4899",
-      Validation: "#14b8a6",
-      "Early Growth": "#f97316",
-      Scaling: "#7c3aed",
-    };
-    return colors[stage] || "#6b7280";
-  }
-
   // Fetch projects from MongoDB
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -480,7 +374,7 @@ export default function Home() {
         setFormUrl("");
         setCsvFile(null);
         setIsModalOpen(false);
-        setSelectedProject(newProject); // Select the newly created project
+        setSelectedProject(newProject);
       }
 
       console.log(await response.json());
@@ -650,15 +544,6 @@ export default function Home() {
     }
   };
 
-  // Check if a stage button should be disabled
-  // const isStageButtonDisabled = (stageNumber) => {
-  //   if (stageNumber === 1) return false; // First stage is always enabled
-
-  //   // Check if the previous stage is completed
-  //   const prevStageName = `stage${stageNumber - 1}`;
-  //   return stageStatus[prevStageName].status !== "completed";
-  // };
-
   const isStageButtonDisabled = (stageNumber) => {
     if (stageNumber === 1) return false;
     const prevStageName = `stage${stageNumber - 1}`;
@@ -764,6 +649,16 @@ export default function Home() {
         </div>
       );
     } else if (status === "completed") {
+      // useEffect(() => {
+      //   if (selectedProject && !stageReportData[stageNumber]) {
+      //     fetchStageReportData(selectedProject.projectId, stageNumber);
+      //   }
+      // }, [selectedProject, stageNumber]);
+
+      // const currentReportData = stageReportData[stageNumber] || [];
+
+      const currentReportData = stageReportData[stageNumber] || [];
+
       return (
         <div>
           <div className="p-4 bg-green-50 rounded-lg border border-green-200 mb-6">
@@ -792,8 +687,9 @@ export default function Home() {
                 <div className="text-gray-500">Loading data...</div>
               </div>
             ) : analyticsData ? (
-              <div className="grid grid-cols-2 gap-4">
-                {/* Bar Chart - Startup Count by City */}
+              //          {
+              /* <div className="grid grid-cols-2 gap-4">
+                // Bar Chart - Startup Count by City 
                 <Card>
                   <CardHeader>
                     <CardTitle>Startup Count by City</CardTitle>
@@ -843,7 +739,7 @@ export default function Home() {
                   </CardContent>
                 </Card>
 
-                {/* Pie Chart - Current Startup Stage */}
+                // Pie Chart - Current Startup Stage
                 <Card>
                   <CardHeader>
                     <CardTitle>Startup Count by Stage</CardTitle>
@@ -913,7 +809,7 @@ export default function Home() {
                   </CardFooter>
                 </Card>
 
-                {/* Donut Chart - Legal Entity Type Distribution */}
+                // Donut Chart - Legal Entity Type Distribution
                 <Card>
                   <CardHeader>
                     <CardTitle>Legal Entity Type Distribution</CardTitle>
@@ -1040,6 +936,314 @@ export default function Home() {
                           )}
                           labelLine={false}
                         />
+                      </PieChart>
+                    </ChartContainer>
+                  </CardContent>
+                  <CardFooter className="flex-col gap-2 text-sm">
+                    <div className="leading-none text-muted-foreground">
+                      Showing distribution of startups by sector
+                    </div>
+                  </CardFooter>
+                </Card>
+              </div> */
+
+              //  }
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Bar Chart - Startup Count by City */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Startup Count by City</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer
+                      config={{
+                        value: {
+                          label: "Startups",
+                          color: "hsl(var(--chart-1))",
+                        },
+                      }}
+                    >
+                      <BarChart
+                        accessibilityLayer
+                        data={currentReportData.reduce((acc, entry) => {
+                          const city = entry.city;
+                          acc[city] = (acc[city] || 0) + 1;
+                          return acc;
+                        }, {})}
+                        margin={{ top: 20 }}
+                      >
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={10}
+                          tickFormatter={(value) => value.slice(0, 6)}
+                        />
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent hideLabel />}
+                        />
+                        <Bar
+                          dataKey="value"
+                          fill="var(--color-value)"
+                          radius={[8, 8, 0, 0]}
+                        >
+                          <LabelList
+                            position="top"
+                            offset={12}
+                            className="fill-foreground"
+                            fontSize={12}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Pie Chart - Current Startup Stage */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Startup Count by Stage</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 pt-6">
+                    <ChartContainer
+                      config={{
+                        ...Object.fromEntries(
+                          Array.from(
+                            currentReportData.reduce((acc, entry) => {
+                              const stage = entry.stage;
+                              acc.set(stage, (acc.get(stage) || 0) + 1);
+                              return acc;
+                            }, new Map())
+                          ).map(([stage], index) => [
+                            stage,
+                            {
+                              label: stage,
+                              color: `hsl(var(--chart-${(index % 5) + 1}))`,
+                            },
+                          ])
+                        ),
+                      }}
+                      className="mx-auto aspect-square max-h-[250px] px-0"
+                    >
+                      <PieChart>
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent nameKey="value" hideLabel />
+                          }
+                        />
+                        <Pie
+                          data={Array.from(
+                            currentReportData.reduce((acc, entry) => {
+                              const stage = entry.stage;
+                              acc.set(stage, (acc.get(stage) || 0) + 1);
+                              return acc;
+                            }, new Map()),
+                            ([name, value]) => ({ name, value })
+                          )}
+                          dataKey="value"
+                          nameKey="name"
+                          labelLine={false}
+                          label={({ payload, ...props }) => {
+                            return (
+                              <text
+                                cx={props.cx}
+                                cy={props.cy}
+                                x={props.x}
+                                y={props.y}
+                                textAnchor={props.textAnchor}
+                                dominantBaseline={props.dominantBaseline}
+                                fill="hsla(var(--foreground))"
+                              >
+                                {payload.value}
+                              </text>
+                            );
+                          }}
+                        >
+                          {Array.from(
+                            currentReportData.reduce((acc, entry) => {
+                              const stage = entry.stage;
+                              acc.set(stage, (acc.get(stage) || 0) + 1);
+                              return acc;
+                            }, new Map())
+                          ).map((_, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={`hsl(var(--chart-${(index % 6) + 1}))`}
+                            />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ChartContainer>
+                  </CardContent>
+                  <CardFooter className="flex-col gap-2 text-sm">
+                    <div className="leading-none text-muted-foreground">
+                      Showing distribution of startups by current stage
+                    </div>
+                  </CardFooter>
+                </Card>
+
+                {/* Donut Chart - Legal Entity Type Distribution */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Legal Entity Type Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 pt-6">
+                    <ChartContainer
+                      config={{
+                        ...Object.fromEntries(
+                          Array.from(
+                            currentReportData.reduce((acc, entry) => {
+                              const entity = entry.legalEntity;
+                              acc.set(entity, (acc.get(entity) || 0) + 1);
+                              return acc;
+                            }, new Map())
+                          ).map(([entity], index) => [
+                            entity,
+                            {
+                              label: entity,
+                              color: `hsl(var(--chart-${(index % 6) + 1}))`,
+                            },
+                          ])
+                        ),
+                      }}
+                      className="mx-auto aspect-square max-h-[250px] px-0"
+                    >
+                      <PieChart>
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent nameKey="value" hideLabel />
+                          }
+                        />
+                        <Pie
+                          data={Array.from(
+                            currentReportData.reduce((acc, entry) => {
+                              const entity = entry.legalEntity;
+                              acc.set(entity, (acc.get(entity) || 0) + 1);
+                              return acc;
+                            }, new Map()),
+                            ([name, value]) => ({ name, value })
+                          )}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          labelLine={false}
+                          label={({ payload, ...props }) => (
+                            <text
+                              cx={props.cx}
+                              cy={props.cy}
+                              x={props.x}
+                              y={props.y}
+                              textAnchor={props.textAnchor}
+                              dominantBaseline={props.dominantBaseline}
+                              fill="hsla(var(--foreground))"
+                            >
+                              {payload.value}
+                            </text>
+                          )}
+                        >
+                          {Array.from(
+                            currentReportData.reduce((acc, entry) => {
+                              const entity = entry.legalEntity;
+                              acc.set(entity, (acc.get(entity) || 0) + 1);
+                              return acc;
+                            }, new Map())
+                          ).map((_, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={`hsl(var(--chart-${(index % 6) + 1}))`}
+                            />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ChartContainer>
+                  </CardContent>
+                  <CardFooter className="flex-col gap-2 text-sm">
+                    <div className="leading-none text-muted-foreground">
+                      Showing distribution of legal entity types across startups
+                    </div>
+                  </CardFooter>
+                </Card>
+
+                {/* Sector Distribution */}
+                <Card className="flex flex-col">
+                  <CardHeader>
+                    <CardTitle>Sector Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 pt-6">
+                    <ChartContainer
+                      config={{
+                        ...Object.fromEntries(
+                          Array.from(
+                            currentReportData.reduce((acc, entry) => {
+                              const sector = entry.sector;
+                              acc.set(sector, (acc.get(sector) || 0) + 1);
+                              return acc;
+                            }, new Map())
+                          ).map(([sector], index) => [
+                            sector,
+                            {
+                              label: sector,
+                              color: `hsl(var(--chart-${(index % 6) + 1}))`,
+                            },
+                          ])
+                        ),
+                      }}
+                      className="mx-auto aspect-square max-h-[250px] px-0"
+                    >
+                      <PieChart>
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent nameKey="value" hideLabel />
+                          }
+                        />
+                        <Pie
+                          data={Array.from(
+                            currentReportData.reduce((acc, entry) => {
+                              const sector = entry.sector;
+                              acc.set(sector, (acc.get(sector) || 0) + 1);
+                              return acc;
+                            }, new Map()),
+                            ([name, value]) => ({ name, value })
+                          )}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          label={({ payload, ...props }) => (
+                            <text
+                              cx={props.cx}
+                              cy={props.cy}
+                              x={props.x}
+                              y={props.y}
+                              textAnchor={props.textAnchor}
+                              dominantBaseline={props.dominantBaseline}
+                              fill="hsla(var(--foreground))"
+                            >
+                              {payload.value}
+                            </text>
+                          )}
+                          labelLine={false}
+                        >
+                          {Array.from(
+                            currentReportData.reduce((acc, entry) => {
+                              const sector = entry.sector;
+                              acc.set(sector, (acc.get(sector) || 0) + 1);
+                              return acc;
+                            }, new Map())
+                          ).map((_, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={`hsl(var(--chart-${(index % 6) + 1}))`}
+                            />
+                          ))}
+                        </Pie>
                       </PieChart>
                     </ChartContainer>
                   </CardContent>
